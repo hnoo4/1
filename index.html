@@ -10,30 +10,51 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Roboto+Mono:wght@700&display=swap');
+      
       body {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
         background-color: #0f172a;
         color: #e2e8f0;
-        overflow: hidden;
-        overscroll-behavior-y: contain;
         -webkit-tap-highlight-color: transparent;
       }
-      .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+      .font-mono { 
+        font-family: 'Roboto Mono', monospace; 
+        letter-spacing: -0.5px;
+      }
+
+      .font-keypad {
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+
       .safe-area-pt { padding-top: env(safe-area-inset-top); }
       .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      
       @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      
       .active-scale:active { transform: scale(0.95); }
       * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       button:active { opacity: 0.7; }
+
+      /* 滑動橫槓樣式 */
+      .drag-handle {
+        width: 40px;
+        height: 5px;
+        background-color: #475569;
+        border-radius: 999px;
+        margin: 0 auto 12px;
+      }
+
+      /* 隱藏捲動條但保留功能 */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="safe-area-pt h-screen flex flex-col">
+<body class="safe-area-pt min-h-screen">
 
-    <header class="bg-indigo-900/40 border-b border-indigo-500/20 p-5 rounded-b-[2.5rem] shrink-0 shadow-2xl z-10">
+    <header class="bg-indigo-900/40 border-b border-indigo-500/20 p-5 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-20 backdrop-blur-lg">
         <div class="max-w-xl mx-auto">
             <div class="flex justify-between items-center mb-5 px-1">
                 <h1 class="text-xl font-black flex items-center gap-2 text-white">
@@ -65,48 +86,51 @@
         </div>
     </header>
 
-    <main class="flex-grow overflow-hidden flex flex-col max-w-xl mx-auto w-full">
-        <div class="p-5 shrink-0">
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                    <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚗</div>
-                    <p class="text-sm font-bold text-white mb-1">Uber</p>
-                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
-                </button>
-                <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                    <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">⚡</div>
-                    <p class="text-sm font-bold text-white mb-1">Bolt</p>
-                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
-                </button>
-                <button onclick="openInput('台大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                    <div class="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚕</div>
-                    <p class="text-sm font-bold text-white mb-1">台大車隊</p>
-                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
-                </button>
-                <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                    <div class="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🎁</div>
-                    <p class="text-sm font-bold text-white mb-1">獎勵/其他</p>
-                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
-                </button>
-            </div>
+    <main class="max-w-xl mx-auto w-full pb-20">
+        <div class="p-5 grid grid-cols-2 gap-4">
+            <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚗</div>
+                <p class="text-sm font-bold text-white mb-1">Uber</p>
+                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
+            </button>
+            <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">⚡</div>
+                <p class="text-sm font-bold text-white mb-1">Bolt</p>
+                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
+            </button>
+            <button onclick="openInput('台灣大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚕</div>
+                <p class="text-sm font-bold text-white mb-1">台灣大車隊</p>
+                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
+            </button>
+            <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🎁</div>
+                <p class="text-sm font-bold text-white mb-1">獎勵/其他</p>
+                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
+            </button>
         </div>
 
-        <div class="flex-grow flex flex-col bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner overflow-hidden">
-            <div class="px-8 py-5 flex justify-between items-center shrink-0">
+        <div class="bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner mt-4">
+            <div class="px-8 py-5 flex justify-between items-center">
                 <h2 class="text-sm font-black uppercase tracking-widest text-slate-400">最近行程明細</h2>
                 <button onclick="window.clearHistory()" class="text-[10px] font-bold text-slate-600 hover:text-red-400 transition-colors py-1 px-3 border border-slate-800 rounded-full">
                     <i class="fas fa-trash-arrow-up mr-1"></i>直接清空
                 </button>
             </div>
-            <div id="record-list" class="overflow-y-auto px-5 pb-10 space-y-3 flex-grow custom-scrollbar">
-                </div>
+            <div id="record-list" class="px-5 pb-10 space-y-3"></div>
         </div>
     </main>
 
-    <div id="modal" class="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-md hidden">
-        <div class="bg-slate-800 rounded-t-[3rem] shadow-2xl overflow-hidden animate-slide-up border-t border-indigo-500/20 safe-area-pb">
-            <div class="h-1.5 w-12 bg-slate-600 rounded-full mx-auto mt-4 mb-2"></div>
-            <div class="p-8 text-center">
+    <div id="modal" class="fixed inset-0 z-50 overflow-y-auto no-scrollbar hidden bg-black/70 backdrop-blur-sm" onclick="closeModal()">
+        <div class="h-[20vh] w-full"></div>
+        
+        <div class="bg-slate-800 rounded-t-[3rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full animate-slide-up" onclick="event.stopPropagation()">
+            
+            <div class="pt-4 pb-2 cursor-grab active:cursor-grabbing">
+                <div class="drag-handle"></div>
+            </div>
+
+            <div class="p-6 text-center">
                 <div class="flex items-center justify-center gap-2 mb-2">
                     <span id="m-icon" class="text-2xl">🚗</span>
                     <h3 id="m-title" class="text-slate-400 text-xs font-black uppercase tracking-widest">輸入金額</h3>
@@ -122,25 +146,27 @@
                     </p>
                 </div>
             </div>
+
             <div class="p-4 grid grid-cols-3 gap-3 bg-slate-900/50">
-                <button onclick="pressKey('1')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">1</button>
-                <button onclick="pressKey('2')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">2</button>
-                <button onclick="pressKey('3')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">3</button>
-                <button onclick="pressKey('4')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">4</button>
-                <button onclick="pressKey('5')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">5</button>
-                <button onclick="pressKey('6')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">6</button>
-                <button onclick="pressKey('7')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">7</button>
-                <button onclick="pressKey('8')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">8</button>
-                <button onclick="pressKey('9')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">9</button>
-                <button onclick="closeModal()" class="h-16 rounded-3xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
-                <button onclick="pressKey('0')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">0</button>
-                <button onclick="pressKey('del')" class="h-16 rounded-3xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
+                <button onclick="pressKey('1')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">1</button>
+                <button onclick="pressKey('2')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">2</button>
+                <button onclick="pressKey('3')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">3</button>
+                <button onclick="pressKey('4')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">4</button>
+                <button onclick="pressKey('5')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">5</button>
+                <button onclick="pressKey('6')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">6</button>
+                <button onclick="pressKey('7')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">7</button>
+                <button onclick="pressKey('8')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">8</button>
+                <button onclick="pressKey('9')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">9</button>
+                <button onclick="closeModal()" class="h-14 rounded-2xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
+                <button onclick="pressKey('0')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">0</button>
+                <button onclick="pressKey('del')" class="h-14 rounded-2xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
             </div>
             <div class="p-6">
                 <button onclick="confirmEntry()" class="w-full h-16 bg-indigo-600 text-white text-lg font-black rounded-3xl shadow-xl active-scale flex items-center justify-center gap-3">
                     確認入帳 <i class="fas fa-check-circle"></i>
                 </button>
             </div>
+            <div class="h-10"></div>
         </div>
     </div>
 
@@ -150,9 +176,7 @@
         let currentInput = "";
         let currentTemplate = null;
 
-        function init() {
-            updateUI();
-        }
+        function init() { updateUI(); }
 
         window.openInput = function(label, rate, icon, inputType) {
             currentTemplate = { label, rate, icon, inputType };
@@ -161,12 +185,18 @@
             document.getElementById('m-icon').innerText = icon;
             document.getElementById('m-calc-label').innerText = inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
             updateModalDisplay();
-            document.getElementById('modal').classList.remove('hidden');
+            
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            modal.scrollTo(0, 0); // 開啟時回到頂部
+            document.body.style.overflow = 'hidden'; 
             vibrate(15);
         };
 
         window.closeModal = function() {
-            document.getElementById('modal').classList.add('hidden');
+            const modal = document.getElementById('modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto'; 
         };
 
         window.pressKey = function(key) {
@@ -181,14 +211,7 @@
 
         function updateModalDisplay() {
             const val = parseFloat(currentInput) || 0;
-            let result = 0;
-            if (currentTemplate) {
-                if (currentTemplate.inputType === 'net') {
-                    result = Math.round(val / currentTemplate.rate);
-                } else {
-                    result = Math.round(val * currentTemplate.rate);
-                }
-            }
+            let result = currentTemplate ? (currentTemplate.inputType === 'net' ? Math.round(val / currentTemplate.rate) : Math.round(val * currentTemplate.rate)) : 0;
             document.getElementById('display-val').innerText = currentInput || "0";
             document.getElementById('m-calc-val').innerText = `$${result.toLocaleString()}`;
         }
@@ -196,33 +219,24 @@
         window.confirmEntry = function() {
             if (!currentInput || currentInput === "0") return;
             const inputVal = parseFloat(currentInput);
-            let netAmount = 0, originalAmount = 0;
-
-            if (currentTemplate.inputType === 'net') {
-                netAmount = inputVal;
-                originalAmount = Math.round(inputVal / currentTemplate.rate);
-            } else {
-                originalAmount = inputVal;
-                netAmount = Math.round(inputVal * currentTemplate.rate);
-            }
+            let netAmount = currentTemplate.inputType === 'net' ? inputVal : Math.round(inputVal * currentTemplate.rate);
+            let originalAmount = currentTemplate.inputType === 'net' ? Math.round(inputVal / currentTemplate.rate) : inputVal;
 
             const now = new Date();
-            const record = {
+            records.unshift({
                 id: Date.now(),
                 label: currentTemplate.label,
                 icon: currentTemplate.icon,
                 net: netAmount,
                 original: originalAmount,
                 date: `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-            };
+            });
 
-            records.unshift(record);
             saveData();
             closeModal();
             vibrate([10, 30, 10]);
         };
 
-        // 修改：移除確認視窗，直接刪除
         window.deleteRecord = function(id, event) {
             if (event) event.stopPropagation(); 
             records = records.filter(r => r.id !== id);
@@ -230,7 +244,6 @@
             vibrate(20);
         };
 
-        // 修改：移除確認視窗，直接清空
         window.clearHistory = function() {
             records = [];
             saveData();
@@ -254,37 +267,21 @@
 
             const listContainer = document.getElementById('record-list');
             if (records.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40">
-                        <i class="fas fa-box-open text-4xl mb-3"></i>
-                        <p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p>
-                    </div>`;
+                listContainer.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40"><i class="fas fa-box-open text-4xl mb-3"></i><p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p></div>`;
             } else {
                 listContainer.innerHTML = records.map(r => `
                     <div class="flex items-center gap-4 p-5 bg-slate-800/30 rounded-[1.5rem] border border-white/5 active:bg-slate-800 transition-all">
                         <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-xl">${r.icon}</div>
                         <div class="flex-grow min-w-0">
                             <p class="font-bold text-slate-200 truncate">${r.label}</p>
-                            <div class="flex items-center gap-2 mt-0.5">
-                                <span class="text-[9px] text-slate-500 font-bold">${r.date}</span>
-                                <span class="text-[9px] font-bold text-slate-400">原始: $${r.original.toLocaleString()}</span>
-                            </div>
+                            <div class="flex items-center gap-2 mt-0.5"><span class="text-[9px] text-slate-500 font-bold font-mono">${r.date}</span><span class="text-[9px] font-bold text-slate-400">原始: <span class="font-mono">$${r.original.toLocaleString()}</span></span></div>
                         </div>
-                        <div class="text-right shrink-0 pr-1">
-                            <p class="font-black font-mono text-base text-green-400">$${r.net.toLocaleString()}</p>
-                        </div>
-                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-10 h-10 flex items-center justify-center text-slate-600 active:text-red-400">
-                            <i class="fas fa-trash-can"></i>
-                        </button>
-                    </div>
-                `).join('');
+                        <div class="text-right shrink-0 pr-1"><p class="font-black font-mono text-base text-green-400">$${r.net.toLocaleString()}</p></div>
+                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-10 h-10 flex items-center justify-center text-slate-600 active:text-red-400"><i class="fas fa-trash-can"></i></button>
+                    </div>`).join('');
             }
         }
-
-        function vibrate(pattern) {
-            if (navigator.vibrate) navigator.vibrate(pattern);
-        }
-
+        function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
         init();
     </script>
 </body>
