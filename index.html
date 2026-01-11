@@ -6,17 +6,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
-    <title>老雞掰</title>
+    <title>老雞掰 - 職業駕駛記帳</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Roboto+Mono:wght@700&display=swap');
-      
+
       body {
         font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
         background-color: #0f172a;
         color: #e2e8f0;
         -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none;
+        user-select: none;
       }
 
       .font-mono { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
@@ -24,15 +26,15 @@
 
       .safe-area-pt { padding-top: env(safe-area-inset-top); }
       .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
-      
+
       #modal-content {
         transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         will-change: transform;
       }
-      
-      .active-scale:active { transform: scale(0.95); }
+
+      .active-scale:active { transform: scale(0.95); transition: transform 0.1s; }
       * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-      button:active { opacity: 0.7; }
+      button:active { opacity: 0.8; }
 
       .drag-handle {
         width: 40px;
@@ -42,306 +44,677 @@
         margin: 0 auto 12px;
       }
 
-      #modal-overlay {
-        transition: opacity 0.3s ease;
+      /* Work Button Progress */
+      .reset-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 4px;
+        background-color: rgba(255, 255, 255, 0.8);
+        width: 0%;
+        transition: width 0.1s linear;
       }
+
+      /* Clear Button SVG Styles */
+      .clear-btn-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .clear-btn-border-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+        z-index: 20; /* 修正：提高層級，確保紅線壓在按鈕背景之上 */
+      }
+
+      .clear-btn-stroke {
+        fill: none;
+        stroke: #ef4444; /* red-500 */
+        stroke-width: 2px;
+        stroke-dasharray: 100;      /* pathLength=100 in HTML makes this work perfectly */
+        stroke-dashoffset: 100;     /* Hidden initially */
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke; /* Keeps stroke width constant despite scaling */
+        transition: stroke-dashoffset 0.2s ease-out; /* Fast reset */
+      }
+
+      /* Triggered by JS class on container */
+      .is-clearing .clear-btn-stroke {
+        transition: stroke-dashoffset 2000ms linear !important; /* 2s fill */
+        stroke-dashoffset: 0; /* Show full stroke */
+      }
+
+      /* Popup Menu Animation */
+      #platform-menu {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        transform-origin: top center;
+      }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="safe-area-pt min-h-screen">
 
-    <header class="bg-indigo-900/40 border-b border-indigo-500/20 p-5 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-20 backdrop-blur-lg">
-        <div class="max-w-xl mx-auto">
-            <div class="flex justify-between items-center mb-5 px-1">
-                <h1 class="text-xl font-black flex items-center gap-2 text-white">
-                    <span class="bg-indigo-600 p-2 rounded-xl shadow-lg"><i class="fas fa-taxi"></i></span>
-                    老雞掰
-                </h1>
-                <div class="text-right">
-                    <p class="text-[11px] text-slate-300 font-bold uppercase tracking-widest">總實領淨利</p>
-                    <p id="total-net" class="text-3xl font-black font-mono text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">$0</p>
-                </div>
-            </div>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-dollar-sign text-green-400 text-lg mb-1"></i>
-                    <span class="text-xs font-bold text-slate-300">總實領</span>
-                    <span id="stat-total" class="text-lg font-mono font-bold">$0</span>
-                </div>
-                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-route text-indigo-400 text-lg mb-1"></i>
-                    <span class="text-xs font-bold text-slate-300">趟數</span>
-                    <span id="stat-trips" class="text-lg font-mono font-bold">0</span>
-                </div>
-                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-chart-line text-orange-400 text-lg mb-1"></i>
-                    <span class="text-xs font-bold text-slate-300">平均</span>
-                    <span id="stat-avg" class="text-lg font-mono font-bold">$0</span>
-                </div>
-            </div>
-        </div>
-    </header>
+<body class="safe-area-pt min-h-screen flex flex-col">
 
-    <main class="max-w-xl mx-auto w-full pb-20">
-        <div class="p-5 grid grid-cols-2 gap-4">
-            <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🚗</div>
-                <p class="text-base font-bold text-white mb-1">Uber</p>
-                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
-            </button>
-            <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">⚡</div>
-                <p class="text-base font-bold text-white mb-1">Bolt</p>
-                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
-            </button>
-            <button onclick="openInput('台灣大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🚕</div>
-                <p class="text-base font-bold text-white mb-1">台灣大車隊</p>
-                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
-            </button>
-            <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-14 h-14 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🎁</div>
-                <p class="text-base font-bold text-white mb-1">獎勵/其他</p>
-                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
-            </button>
-        </div>
+<header class="bg-indigo-900/40 border-b border-indigo-500/20 px-5 pt-4 pb-6 rounded-b-[2.5rem] shadow-2xl sticky top-0 z-20 backdrop-blur-lg">
+  <div class="max-w-xl mx-auto">
+    <div class="flex justify-between items-start mb-6 gap-2">
+      <div class="flex flex-col justify-center pt-1 w-24">
+        <h1 class="text-lg font-black flex items-center gap-2 text-white">
+          <span class="bg-indigo-600 p-1.5 rounded-lg shadow-lg text-sm"><i class="fas fa-taxi"></i></span>
+          老雞掰
+        </h1>
+      </div>
 
-        <div class="bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner mt-4">
-            <div class="px-8 py-5 flex justify-between items-center">
-                <h2 class="text-base font-black uppercase tracking-widest text-slate-400">最近行程明細</h2>
-                <button onclick="window.clearHistory()" class="text-xs font-bold text-slate-600 hover:text-red-400 transition-colors py-1 px-3 border border-slate-800 rounded-full">
-                    <i class="fas fa-trash-arrow-up mr-1"></i>長按清空
-                </button>
-            </div>
-            <div id="record-list" class="px-5 pb-10 space-y-3"></div>
-        </div>
-    </main>
+      <div class="flex-grow flex justify-center -mt-1 relative">
+        <button id="work-btn"
+          class="active-scale relative group overflow-hidden bg-blue-600 shadow-lg shadow-blue-900/50 rounded-2xl w-32 h-14 flex flex-col items-center justify-center transition-all duration-300 border border-white/10 select-none touch-manipulation"
+          style="-webkit-touch-callout: none;">
+          <div class="pointer-events-none flex flex-col items-center">
+            <span id="work-btn-text" class="text-base font-black tracking-widest text-white">上班</span>
+            <span id="work-timer" class="text-[11px] font-mono font-bold text-blue-100 opacity-0 h-0 transition-all">00:00:00</span>
+          </div>
+          <div id="reset-progress" class="reset-indicator"></div>
+        </button>
+        <div id="reset-hint" class="absolute -bottom-5 text-[9px] text-slate-400 opacity-0 transition-opacity font-bold tracking-wider">長按重置</div>
+      </div>
 
-    <div id="modal-overlay" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex flex-col justify-end" onclick="closeModal()">
-        
-        <div id="modal-content" class="bg-slate-800 rounded-t-[3rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full" onclick="event.stopPropagation()">
-            
-            <div class="pt-3 pb-1 cursor-grab active:cursor-grabbing">
-                <div class="drag-handle"></div>
-            </div>
-
-            <div class="px-6 pb-2 text-center">
-                <div class="flex items-center justify-center gap-2 mb-1">
-                    <span id="m-icon" class="text-2xl">🚗</span>
-                    <h3 id="m-title" class="text-slate-400 text-xs font-black uppercase tracking-widest">輸入金額</h3>
-                </div>
-                <div class="text-6xl font-black font-mono text-green-400 h-16 flex items-center justify-center tracking-tighter">
-                    <span class="text-green-500 mr-2 text-3xl">$</span>
-                    <span id="display-val">0</span>
-                    <span class="w-1.5 h-10 bg-green-500 ml-2 animate-pulse rounded-full"></span>
-                </div>
-                <div class="bg-slate-900/50 border border-white/5 rounded-2xl py-1 px-4 inline-block mt-2">
-                    <p class="text-sm font-bold text-slate-400 flex items-center gap-2">
-                        <span id="m-calc-label">計算結果</span>: <span id="m-calc-val" class="text-white text-lg font-mono">$0</span>
-                    </p>
-                </div>
-            </div>
-
-            <div class="p-3 grid grid-cols-3 gap-2 bg-slate-900/50">
-                <button onclick="pressKey('1')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">1</button>
-                <button onclick="pressKey('2')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">2</button>
-                <button onclick="pressKey('3')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">3</button>
-                <button onclick="pressKey('4')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">4</button>
-                <button onclick="pressKey('5')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">5</button>
-                <button onclick="pressKey('6')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">6</button>
-                <button onclick="pressKey('7')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">7</button>
-                <button onclick="pressKey('8')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">8</button>
-                <button onclick="pressKey('9')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">9</button>
-                <button onclick="closeModal()" class="h-11 rounded-2xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
-                <button onclick="pressKey('0')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">0</button>
-                <button onclick="pressKey('del')" class="h-11 rounded-2xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
-            </div>
-            <div class="p-4">
-                <button onclick="confirmEntry()" class="w-full h-12 bg-indigo-600 text-white text-lg font-black rounded-2xl shadow-xl active-scale flex items-center justify-center gap-3">
-                    確認入帳 <i class="fas fa-check-circle"></i>
-                </button>
-            </div>
-            <div class="h-4"></div>
-        </div>
+      <div class="text-right min-w-[100px] pt-0.5">
+        <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-0.5">總實領淨利</p>
+        <p id="main-stat-val" class="text-2xl font-black font-mono text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">$0</p>
+      </div>
     </div>
 
-    <script>
-        const STORAGE_KEY = 'taxi_ledger_final_v5';
-        let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        let currentInput = "";
-        let currentTemplate = null;
+    <div class="grid grid-cols-3 gap-3">
+      <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-3 flex flex-col items-center justify-center shadow-lg">
+        <i class="fas fa-stopwatch text-cyan-400 text-base mb-1"></i>
+        <span class="text-[10px] font-bold text-slate-300">時薪</span>
+        <span id="stat-hourly" class="text-base font-mono font-bold text-white">$0</span>
+      </div>
+      <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-3 flex flex-col items-center justify-center shadow-lg">
+        <i class="fas fa-route text-indigo-400 text-base mb-1"></i>
+        <span class="text-[10px] font-bold text-slate-300">趟數</span>
+        <span id="stat-trips" class="text-base font-mono font-bold">0</span>
+      </div>
+      <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-3 flex flex-col items-center justify-center shadow-lg">
+        <i class="fas fa-chart-line text-orange-400 text-base mb-1"></i>
+        <span class="text-[10px] font-bold text-slate-300">平均</span>
+        <span id="stat-avg" class="text-base font-mono font-bold">$0</span>
+      </div>
+    </div>
+  </div>
+</header>
 
-        let startY = 0;
-        let currentY = 0;
-        let isDragging = false;
-        const modalContent = document.getElementById('modal-content');
-        const modalOverlay = document.getElementById('modal-overlay');
+<main class="max-w-xl mx-auto w-full pb-24 flex-grow relative z-10 mt-2">
+  <div class="px-5 grid grid-cols-2 gap-3" id="platform-buttons">
+    <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-4 rounded-[1.5rem] flex flex-col items-center justify-center hover:bg-slate-800/60 transition-colors">
+      <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-2 shadow-lg text-2xl">🚗</div>
+      <p class="text-sm font-bold text-white mb-0.5">Uber</p>
+      <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
+    </button>
 
-        function init() { 
-            updateUI(); 
-            initGesture();
-        }
+    <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-4 rounded-[1.5rem] flex flex-col items-center justify-center hover:bg-slate-800/60 transition-colors">
+      <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mb-2 shadow-lg text-2xl">⚡</div>
+      <p class="text-sm font-bold text-white mb-0.5">Bolt</p>
+      <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
+    </button>
 
-        // 修改：監聽區域改為 modalContent，讓整個彈窗都可拖曳
-        function initGesture() {
-            const dragZone = document.getElementById('modal-content');
+    <button onclick="openInput('台灣大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-4 rounded-[1.5rem] flex flex-col items-center justify-center hover:bg-slate-800/60 transition-colors">
+      <div class="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center mb-2 shadow-lg text-2xl">🚕</div>
+      <p class="text-sm font-bold text-white mb-0.5">台灣大車隊</p>
+      <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
+    </button>
 
-            const onTouchStart = (e) => {
-                // 檢查是否點擊到按鈕 (避免拖曳影響點擊)
-                // 但為了實現「按住按鈕下拉也能關閉」，我們不做過多阻擋
-                // 瀏覽器通常能區分 Click 和 Scroll/Drag
-                startY = e.touches[0].clientY;
-                isDragging = true;
-                modalContent.style.transition = 'none'; 
-            };
+    <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-4 rounded-[1.5rem] flex flex-col items-center justify-center hover:bg-slate-800/60 transition-colors">
+      <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center mb-2 shadow-lg text-2xl">🎁</div>
+      <p class="text-sm font-bold text-white mb-0.5">獎勵/其他</p>
+      <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
+    </button>
+  </div>
 
-            const onTouchMove = (e) => {
-                if (!isDragging) return;
-                currentY = e.touches[0].clientY;
-                const deltaY = currentY - startY;
-                
-                if (deltaY > 0) { 
-                    e.preventDefault(); // 防止背景滾動
-                    modalContent.style.transform = `translateY(${deltaY}px)`;
-                    const opacity = 0.7 * (1 - deltaY / window.innerHeight);
-                    modalOverlay.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, opacity)})`;
-                }
-            };
+  <div class="bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner mt-6 min-h-[300px]">
+    <div class="px-8 py-5 flex justify-between items-center sticky top-0 bg-[#0f172a] z-10 rounded-t-[3rem] border-b border-slate-800/50">
+      <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400">最近行程明細 (點擊編輯)</h2>
 
-            const onTouchEnd = () => {
-                if (!isDragging) return;
-                isDragging = false;
-                const deltaY = currentY - startY;
-                const threshold = window.innerHeight * 0.4; 
+      <!-- Clear Button Container -->
+      <div id="clear-btn-container" class="clear-btn-container">
+        <!-- The Button -->
+        <button id="clear-btn"
+          class="relative z-10 text-[10px] font-bold text-slate-500 transition-colors py-1.5 px-3 rounded-full bg-slate-900 border border-white/10 hover:border-white/20 active:bg-slate-800 select-none">
+          <i class="fas fa-trash-arrow-up mr-1"></i>長按清空
+        </button>
 
-                modalContent.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
-                
-                if (deltaY > threshold) {
-                    closeModal();
-                } else {
-                    modalContent.style.transform = `translateY(0)`;
-                    modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0.7)`;
-                }
-                currentY = 0;
-            };
+        <!-- The SVG Border you requested -->
+        <svg class="clear-btn-border-svg" viewBox="0 0 100 32" preserveAspectRatio="none">
+          <rect x="1" y="1" width="98" height="30" rx="16" pathLength="100" class="clear-btn-stroke" />
+        </svg>
+      </div>
+    </div>
 
-            dragZone.addEventListener('touchstart', onTouchStart);
-            window.addEventListener('touchmove', onTouchMove, { passive: false });
-            window.addEventListener('touchend', onTouchEnd);
-        }
+    <div id="record-list" class="px-5 pb-10 space-y-3 pt-4"></div>
+  </div>
+</main>
 
-        window.openInput = function(label, rate, icon, inputType) {
-            currentTemplate = { label, rate, icon, inputType };
-            currentInput = "";
-            document.getElementById('m-title').innerText = inputType === 'net' ? `${label} 實領金額` : `${label} 原始車資`;
-            document.getElementById('m-icon').innerText = icon;
-            document.getElementById('m-calc-label').innerText = inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
-            updateModalDisplay();
-            
-            modalOverlay.classList.remove('hidden');
-            setTimeout(() => { modalOverlay.style.opacity = "1"; }, 10); // Fix fade in
-            modalContent.style.transform = `translateY(0)`;
-            document.body.style.overflow = 'hidden'; 
-            vibrate(15);
-        };
+<!-- Modal Overlay -->
+<div id="modal-overlay" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex flex-col justify-end touch-none" onclick="closeModal()">
+  <div id="modal-content" class="bg-slate-800 rounded-t-[2.5rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full relative overflow-hidden" onclick="event.stopPropagation()">
+    <div class="pt-4 pb-2 w-full flex justify-center cursor-grab active:cursor-grabbing" id="drag-zone">
+      <div class="drag-handle"></div>
+    </div>
 
-        window.closeModal = function() {
-            modalContent.style.transform = `translateY(100%)`;
-            modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0)`;
-            setTimeout(() => {
-                modalOverlay.classList.add('hidden');
-                document.body.style.overflow = 'auto'; 
-            }, 300);
-        };
+    <div class="px-6 pb-2 text-center relative z-20">
+      <div onclick="togglePlatformMenu()" class="inline-flex items-center justify-center gap-2 mb-1 px-4 py-1.5 rounded-full bg-slate-700/30 border border-white/5 active:bg-slate-700 transition-colors cursor-pointer relative">
+        <span id="m-icon" class="text-xl">🚗</span>
+        <h3 id="m-title" class="text-slate-300 text-[10px] font-black uppercase tracking-widest">輸入金額</h3>
+        <i class="fas fa-caret-down text-slate-500 text-xs ml-1"></i>
 
-        window.pressKey = function(key) {
-            vibrate(5);
-            if (key === 'del') {
-                currentInput = currentInput.slice(0, -1);
-            } else if (currentInput.length < 7) {
-                currentInput += key;
-            }
-            updateModalDisplay();
-        };
+        <div id="platform-menu" class="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-40 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl p-1.5 hidden opacity-0 scale-95 flex flex-col gap-1 z-50">
+          <button onclick="switchPlatform('Uber', event)" class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded-xl transition-colors text-left w-full">
+            <span class="text-lg">🚗</span> <span class="text-xs font-bold text-white">Uber</span>
+          </button>
+          <button onclick="switchPlatform('Bolt', event)" class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded-xl transition-colors text-left w-full">
+            <span class="text-lg">⚡</span> <span class="text-xs font-bold text-white">Bolt</span>
+          </button>
+          <button onclick="switchPlatform('台灣大車隊', event)" class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded-xl transition-colors text-left w-full">
+            <span class="text-lg">🚕</span> <span class="text-xs font-bold text-white">台灣大車隊</span>
+          </button>
+          <button onclick="switchPlatform('獎勵', event)" class="flex items-center gap-3 p-2 hover:bg-slate-700 rounded-xl transition-colors text-left w-full">
+            <span class="text-lg">🎁</span> <span class="text-xs font-bold text-white">獎勵/其他</span>
+          </button>
+        </div>
+      </div>
 
-        function updateModalDisplay() {
-            const val = parseFloat(currentInput) || 0;
-            let result = currentTemplate ? (currentTemplate.inputType === 'net' ? Math.round(val / currentTemplate.rate) : Math.round(val * currentTemplate.rate)) : 0;
-            
-            // 修改：即時顯示千分位
-            const formattedInput = currentInput ? parseFloat(currentInput).toLocaleString() : "0";
-            document.getElementById('display-val').innerText = formattedInput;
-            
-            document.getElementById('m-calc-val').innerText = `$${result.toLocaleString()}`;
-        }
+      <div class="text-5xl font-black font-mono text-green-400 h-16 flex items-center justify-center tracking-tighter mt-1">
+        <span class="text-green-500 mr-2 text-2xl select-none">$</span>
+        <span id="display-val">0</span>
+        <span class="w-1 h-8 bg-green-500 ml-1 animate-pulse rounded-full"></span>
+      </div>
 
-        window.confirmEntry = function() {
-            if (!currentInput || currentInput === "0") return;
-            const inputVal = parseFloat(currentInput);
-            let netAmount = currentTemplate.inputType === 'net' ? inputVal : Math.round(inputVal * currentTemplate.rate);
-            let originalAmount = currentTemplate.inputType === 'net' ? Math.round(inputVal / currentTemplate.rate) : inputVal;
+      <div class="bg-slate-900/50 border border-white/5 rounded-xl py-1 px-3 inline-block mt-1">
+        <p class="text-xs font-bold text-slate-400 flex items-center gap-2">
+          <span id="m-calc-label">計算結果</span>: <span id="m-calc-val" class="text-white text-base font-mono">$0</span>
+        </p>
+      </div>
+    </div>
 
-            const now = new Date();
-            records.unshift({
-                id: Date.now(),
-                label: currentTemplate.label,
-                icon: currentTemplate.icon,
-                net: netAmount,
-                original: originalAmount,
-                date: `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-            });
+    <div class="p-4 grid grid-cols-3 gap-3 bg-slate-900/50 mt-2 relative z-10" onclick="hidePlatformMenu()">
+      <button onclick="pressKey('7')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">7</button>
+      <button onclick="pressKey('8')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">8</button>
+      <button onclick="pressKey('9')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">9</button>
 
-            saveData();
-            closeModal();
-            vibrate([10, 30, 10]);
-        };
+      <button onclick="pressKey('4')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">4</button>
+      <button onclick="pressKey('5')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">5</button>
+      <button onclick="pressKey('6')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">6</button>
 
-        window.deleteRecord = function(id, event) {
-            if (event) event.stopPropagation(); 
-            records = records.filter(r => r.id !== id);
-            saveData();
-            vibrate(20);
-        };
+      <button onclick="pressKey('1')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">1</button>
+      <button onclick="pressKey('2')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">2</button>
+      <button onclick="pressKey('3')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">3</button>
 
-        window.clearHistory = function() {
-            records = [];
-            saveData();
-            vibrate([50, 50, 50]);
-        };
+      <button onclick="pressKey('C')" class="h-14 rounded-2xl bg-red-500/10 text-red-500 text-2xl font-black border border-red-500/30 active-scale hover:bg-red-500/20">C</button>
+      <button onclick="pressKey('0')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale shadow-sm">0</button>
+      <button onclick="pressKey('del')" class="h-14 rounded-2xl bg-slate-800/30 text-slate-400 text-xl border border-white/5 active-scale hover:text-red-400"><i class="fas fa-backspace"></i></button>
+    </div>
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-            updateUI();
-        }
+    <div class="p-5 bg-slate-900/50 pb-8 pt-2 relative z-10" onclick="hidePlatformMenu()">
+      <button onclick="confirmEntry()" class="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white text-lg font-black rounded-2xl shadow-xl shadow-indigo-900/40 active-scale flex items-center justify-center gap-3 transition-colors">
+        確認入帳 <i class="fas fa-check-circle"></i>
+      </button>
+    </div>
+  </div>
+</div>
 
-        function updateUI() {
-            const totalNet = records.reduce((sum, r) => sum + r.net, 0);
-            const count = records.length;
-            const avg = count > 0 ? Math.round(totalNet / count) : 0;
+<script>
+  const STORAGE_KEY = 'taxi_ledger_final_v13';
+  const WORK_STATUS_KEY = 'taxi_ledger_work_status_v10';
 
-            document.getElementById('total-net').innerText = `$${totalNet.toLocaleString()}`;
-            document.getElementById('stat-total').innerText = `$${totalNet.toLocaleString()}`;
-            document.getElementById('stat-trips').innerText = count;
-            document.getElementById('stat-avg').innerText = `$${avg.toLocaleString()}`;
+  const TEMPLATES = {
+    'Uber': { rate: 0.75, icon: '🚗', inputType: 'net' },
+    'Bolt': { rate: 0.80, icon: '⚡', inputType: 'orig' },
+    '台灣大車隊': { rate: 0.85, icon: '🚕', inputType: 'orig' },
+    '獎勵': { rate: 1.0, icon: '🎁', inputType: 'net' }
+  };
 
-            const listContainer = document.getElementById('record-list');
-            if (records.length === 0) {
-                listContainer.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40"><i class="fas fa-box-open text-4xl mb-3"></i><p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p></div>`;
-            } else {
-                // 列表文字與圖示也加大
-                listContainer.innerHTML = records.map(r => `
-                    <div class="flex items-center gap-4 p-5 bg-slate-800/30 rounded-[1.5rem] border border-white/5 active:bg-slate-800 transition-all">
-                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-2xl">${r.icon}</div>
-                        <div class="flex-grow min-w-0">
-                            <p class="font-bold text-slate-200 truncate text-lg">${r.label}</p>
-                            <div class="flex items-center gap-2 mt-1"><span class="text-[11px] text-slate-500 font-bold font-mono">${r.date}</span><span class="text-[11px] font-bold text-slate-400">原始: <span class="font-mono">$${r.original.toLocaleString()}</span></span></div>
-                        </div>
-                        <div class="text-right shrink-0 pr-1"><p class="font-black font-mono text-xl text-green-400">$${r.net.toLocaleString()}</p></div>
-                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-12 h-12 flex items-center justify-center text-slate-600 active:text-red-400 text-lg"><i class="fas fa-trash-can"></i></button>
-                    </div>`).join('');
-            }
-        }
-        function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
-        init();
-    </script>
+  let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let workStatus = JSON.parse(localStorage.getItem(WORK_STATUS_KEY) || '{"isWorking": false, "startTime": null}');
+
+  let currentInput = "";
+  let currentTemplate = null;
+  let editingId = null;
+
+  let timerInterval = null;
+  let holdTimer = null;
+  let isResetting = false;
+
+  let clearBtnTimer = null;
+  const CLEAR_HOLD_MS = 2000;
+  const clearBtnContainer = document.getElementById('clear-btn-container');
+  const clearBtn = document.getElementById('clear-btn');
+
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+  const modalContent = document.getElementById('modal-content');
+  const modalOverlay = document.getElementById('modal-overlay');
+
+  function init() {
+    updateUI();
+    initGesture();
+    initWorkButton();
+    initClearButton();
+
+    if (workStatus.isWorking) startTimerLoop();
+    else if (workStatus.startTime) {
+      updateTimerDisplay();
+      updateHourlyRate();
+    }
+    renderWorkButtonState();
+  }
+
+  // ✅ Clear Button with Animation Class Logic
+  function initClearButton() {
+    const startClearHold = (e) => {
+      if (e.type === 'touchstart') e.preventDefault();
+
+      // Trigger animation class
+      clearBtnContainer.classList.add('is-clearing');
+      clearBtn.classList.add('text-red-400');
+
+      clearBtnTimer = setTimeout(() => {
+        window.clearHistory();
+        vibrate([50, 50, 50]);
+        resetClearBtn();
+      }, CLEAR_HOLD_MS);
+    };
+
+    const endClearHold = () => {
+      clearTimeout(clearBtnTimer);
+      resetClearBtn();
+    };
+
+    function resetClearBtn() {
+      clearBtnContainer.classList.remove('is-clearing');
+      clearBtn.classList.remove('text-red-400');
+    }
+
+    clearBtnContainer.addEventListener('touchstart', startClearHold, { passive: false });
+    clearBtnContainer.addEventListener('touchend', endClearHold, { passive: true });
+    clearBtnContainer.addEventListener('touchcancel', endClearHold, { passive: true });
+    clearBtnContainer.addEventListener('mousedown', startClearHold);
+    clearBtnContainer.addEventListener('mouseup', endClearHold);
+    clearBtnContainer.addEventListener('mouseleave', endClearHold);
+  }
+
+  function initWorkButton() {
+    const btn = document.getElementById('work-btn');
+    const resetProgress = document.getElementById('reset-progress');
+    const resetHint = document.getElementById('reset-hint');
+
+    const startHold = (e) => {
+      if (e.type === 'touchstart') e.preventDefault();
+      isResetting = false;
+      resetProgress.style.transition = `width 2000ms linear`;
+      resetProgress.style.width = '100%';
+      resetHint.style.opacity = '1';
+
+      holdTimer = setTimeout(() => {
+        isResetting = true;
+        resetWorkData();
+        vibrate([50, 50, 50, 100]);
+      }, 2000);
+    };
+
+    const endHold = () => {
+      clearTimeout(holdTimer);
+      resetProgress.style.transition = 'width 0.2s ease-out';
+      resetProgress.style.width = '0%';
+      resetHint.style.opacity = '0';
+      if (!isResetting) toggleWork();
+      isResetting = false;
+    };
+
+    btn.addEventListener('touchstart', startHold, { passive: false });
+    btn.addEventListener('touchend', endHold, { passive: true });
+    btn.addEventListener('touchcancel', endHold, { passive: true });
+    btn.addEventListener('mousedown', startHold);
+    btn.addEventListener('mouseup', endHold);
+    btn.addEventListener('mouseleave', endHold);
+  }
+
+  function resetWorkData() {
+    workStatus = { isWorking: false, startTime: null };
+    stopTimerLoop();
+    localStorage.setItem(WORK_STATUS_KEY, JSON.stringify(workStatus));
+    document.getElementById('work-timer').innerText = "00:00:00";
+    document.getElementById('stat-hourly').innerText = "$0";
+    renderWorkButtonState();
+    updateUI();
+  }
+
+  function toggleWork() {
+    if (!workStatus.isWorking) {
+      workStatus.isWorking = true;
+      if (!workStatus.startTime) workStatus.startTime = Date.now();
+      startTimerLoop();
+      vibrate(50);
+    } else {
+      workStatus.isWorking = false;
+      stopTimerLoop();
+      vibrate([30, 30]);
+    }
+    localStorage.setItem(WORK_STATUS_KEY, JSON.stringify(workStatus));
+    renderWorkButtonState();
+    updateUI();
+    updateHourlyRate();
+  }
+
+  function startTimerLoop() {
+    if (timerInterval) clearInterval(timerInterval);
+    updateTimerDisplay();
+    updateHourlyRate();
+    timerInterval = setInterval(() => {
+      updateTimerDisplay();
+      updateHourlyRate();
+    }, 1000);
+  }
+
+  function stopTimerLoop() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function updateTimerDisplay() {
+    if (!workStatus.startTime) {
+      document.getElementById('work-timer').innerText = "00:00:00";
+      return;
+    }
+    const now = Date.now();
+    const elapsed = now - workStatus.startTime;
+
+    const hours = Math.floor(elapsed / 3600000);
+    const minutes = Math.floor((elapsed % 3600000) / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+
+    document.getElementById('work-timer').innerText =
+      String(hours).padStart(2, '0') + ':' +
+      String(minutes).padStart(2, '0') + ':' +
+      String(seconds).padStart(2, '0');
+  }
+
+  function updateHourlyRate() {
+    const hourlyStat = document.getElementById('stat-hourly');
+    if (!workStatus.startTime) {
+      hourlyStat.innerText = "$0";
+      hourlyStat.className = "text-base font-mono font-bold text-white";
+      return;
+    }
+    const now = Date.now();
+
+    const shiftIncome = records
+      .filter(r => r.id >= workStatus.startTime)
+      .reduce((sum, r) => sum + r.net, 0);
+
+    const elapsedHours = (now - workStatus.startTime) / 3600000;
+    let rate = 0;
+    if (elapsedHours > 0.002) rate = Math.round(shiftIncome / elapsedHours);
+
+    hourlyStat.innerText = `$${rate.toLocaleString()}`;
+    if (rate > 500) {
+      hourlyStat.classList.remove('text-white');
+      hourlyStat.classList.add('text-green-400');
+    } else {
+      hourlyStat.classList.add('text-white');
+      hourlyStat.classList.remove('text-green-400');
+    }
+  }
+
+  function renderWorkButtonState() {
+    const workBtn = document.getElementById('work-btn');
+    const workBtnText = document.getElementById('work-btn-text');
+    const workTimerDisplay = document.getElementById('work-timer');
+
+    if (workStatus.isWorking) {
+      workBtn.className = "active-scale relative group overflow-hidden bg-red-600 shadow-lg shadow-red-900/50 rounded-2xl w-32 h-14 flex flex-col items-center justify-center transition-all duration-300 border border-white/10 select-none touch-manipulation";
+      workBtnText.innerText = "下班";
+      workTimerDisplay.classList.remove('opacity-0', 'h-0');
+      workTimerDisplay.classList.add('h-auto', 'opacity-100');
+    } else {
+      workBtn.className = "active-scale relative group overflow-hidden bg-blue-600 shadow-lg shadow-blue-900/50 rounded-2xl w-32 h-14 flex flex-col items-center justify-center transition-all duration-300 border border-white/10 select-none touch-manipulation";
+      workBtnText.innerText = "上班";
+      if (workStatus.startTime) {
+        workTimerDisplay.classList.remove('opacity-0', 'h-0');
+        workTimerDisplay.classList.add('h-auto', 'opacity-100');
+      } else {
+        workTimerDisplay.classList.add('opacity-0', 'h-0');
+        workTimerDisplay.classList.remove('h-auto', 'opacity-100');
+      }
+    }
+  }
+
+  function togglePlatformMenu() {
+    const menu = document.getElementById('platform-menu');
+    if (menu.classList.contains('hidden')) {
+      menu.classList.remove('hidden');
+      setTimeout(() => menu.classList.remove('opacity-0', 'scale-95'), 10);
+    } else {
+      hidePlatformMenu();
+    }
+  }
+
+  function hidePlatformMenu() {
+    const menu = document.getElementById('platform-menu');
+    menu.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => menu.classList.add('hidden'), 200);
+  }
+
+  function switchPlatform(key, event) {
+    event.stopPropagation();
+    const tpl = TEMPLATES[key];
+    if (!tpl) return;
+    currentTemplate = { label: key, rate: tpl.rate, icon: tpl.icon, inputType: tpl.inputType };
+    document.getElementById('m-title').innerText = tpl.inputType === 'net' ? `${key} 實領金額` : `${key} 原始車資`;
+    document.getElementById('m-icon').innerText = tpl.icon;
+    document.getElementById('m-calc-label').innerText = tpl.inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
+    updateModalDisplay();
+    hidePlatformMenu();
+    vibrate(20);
+  }
+
+  function initGesture() {
+    const dragZone = document.getElementById('modal-content');
+    const onTouchStart = (e) => {
+      if (e.target.closest('button') || e.target.closest('#platform-menu')) return;
+      startY = e.touches[0].clientY;
+      isDragging = true;
+      modalContent.style.transition = 'none';
+    };
+    const onTouchMove = (e) => {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      if (deltaY > 0) {
+        e.preventDefault();
+        modalContent.style.transform = `translateY(${deltaY}px)`;
+        const opacity = 0.7 * (1 - deltaY / window.innerHeight);
+        modalOverlay.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, opacity)})`;
+      }
+    };
+    const onTouchEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const deltaY = currentY - startY;
+      if (deltaY > window.innerHeight * 0.3) closeModal();
+      else {
+        modalContent.style.transform = `translateY(0)`;
+        modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0.7)`;
+      }
+      currentY = 0;
+    };
+    dragZone.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+  }
+
+  window.openInput = function(label, rate, icon, inputType) {
+    editingId = null;
+    setupModal(label, rate, icon, inputType, "");
+  };
+
+  window.editRecord = function(id) {
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+    editingId = id;
+    const tpl = TEMPLATES[record.label] || { rate: 1.0, icon: '❓', inputType: 'net' };
+    const prefillValue = (tpl.inputType === 'net') ? record.net.toString() : record.original.toString();
+    setupModal(record.label, tpl.rate, tpl.icon, tpl.inputType, prefillValue);
+  };
+
+  function setupModal(label, rate, icon, inputType, initVal) {
+    currentTemplate = { label, rate, icon, inputType };
+    currentInput = initVal;
+    document.getElementById('m-title').innerText = inputType === 'net' ? `${label} 實領金額` : `${label} 原始車資`;
+    document.getElementById('m-icon').innerText = icon;
+    document.getElementById('m-calc-label').innerText = inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
+    updateModalDisplay();
+    modalOverlay.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      modalOverlay.style.opacity = "1";
+      modalContent.style.transform = `translateY(0)`;
+    });
+    document.body.style.overflow = 'hidden';
+    vibrate(15);
+  }
+
+  window.closeModal = function() {
+    modalContent.style.transform = `translateY(100%)`;
+    modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0)`;
+    setTimeout(() => {
+      modalOverlay.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+      modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0.7)`;
+      modalOverlay.style.opacity = "0";
+      editingId = null;
+      hidePlatformMenu();
+    }, 300);
+  };
+
+  window.pressKey = function(key) {
+    vibrate(5);
+    if (key === 'del') currentInput = currentInput.slice(0, -1);
+    else if (key === 'C') { currentInput = ""; vibrate(20); }
+    else if (currentInput.length < 7) {
+      if (currentInput === "0") currentInput = key;
+      else currentInput += key;
+    }
+    updateModalDisplay();
+  };
+
+  function updateModalDisplay() {
+    const val = parseFloat(currentInput) || 0;
+    const result = currentTemplate
+      ? (currentTemplate.inputType === 'net' ? Math.round(val / currentTemplate.rate) : Math.round(val * currentTemplate.rate))
+      : 0;
+    const formattedInput = currentInput ? parseInt(currentInput).toLocaleString() : "0";
+    document.getElementById('display-val').innerText = formattedInput;
+    document.getElementById('m-calc-val').innerText = `$${result.toLocaleString()}`;
+  }
+
+  window.confirmEntry = function() {
+    if (!currentInput || currentInput === "0") return;
+    const inputVal = parseFloat(currentInput);
+    const netAmount = currentTemplate.inputType === 'net' ? inputVal : Math.round(inputVal * currentTemplate.rate);
+    const originalAmount = currentTemplate.inputType === 'net' ? Math.round(inputVal / currentTemplate.rate) : inputVal;
+
+    if (editingId) {
+      const index = records.findIndex(r => r.id === editingId);
+      if (index !== -1) {
+        records[index].net = netAmount;
+        records[index].original = originalAmount;
+        records[index].label = currentTemplate.label;
+        records[index].icon = currentTemplate.icon;
+      }
+    } else {
+      const now = new Date();
+      records.unshift({
+        id: Date.now(),
+        label: currentTemplate.label,
+        icon: currentTemplate.icon,
+        net: netAmount,
+        original: originalAmount,
+        date: `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      });
+    }
+
+    saveData();
+    closeModal();
+    if (workStatus.isWorking) updateHourlyRate();
+    vibrate([10, 30, 10]);
+  };
+
+  window.deleteRecord = function(id, event) {
+    if (event) event.stopPropagation();
+    if (!confirm('確定刪除此筆記錄？')) return;
+    records = records.filter(r => r.id !== id);
+    saveData();
+    if (workStatus.isWorking) updateHourlyRate();
+    vibrate(20);
+  };
+
+  window.clearHistory = function() {
+    records = [];
+    saveData();
+    updateHourlyRate();
+  };
+
+  function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    updateUI();
+  }
+
+  function updateUI() {
+    const totalNet = records.reduce((sum, r) => sum + r.net, 0);
+    const count = records.length;
+    const avg = count > 0 ? Math.round(totalNet / count) : 0;
+    document.getElementById('main-stat-val').innerText = `$${totalNet.toLocaleString()}`;
+    document.getElementById('stat-trips').innerText = count;
+    document.getElementById('stat-avg').innerText = `$${avg.toLocaleString()}`;
+
+    const listContainer = document.getElementById('record-list');
+    if (records.length === 0) {
+      listContainer.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40"><i class="fas fa-box-open text-4xl mb-3"></i><p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p></div>`;
+    } else {
+      listContainer.innerHTML = records.map(r => `
+        <div onclick="editRecord(${r.id})" class="flex items-center gap-4 p-5 bg-slate-800/30 rounded-[1.5rem] border border-white/5 active:bg-slate-800 transition-all cursor-pointer">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-2xl">${r.icon}</div>
+          <div class="flex-grow min-w-0">
+            <p class="font-bold text-slate-200 truncate text-base">${r.label}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-[10px] text-slate-500 font-bold font-mono">${r.date}</span>
+              <span class="text-[10px] font-bold text-slate-400">原始: <span class="font-mono">$${r.original.toLocaleString()}</span></span>
+            </div>
+          </div>
+          <div class="text-right shrink-0 pr-1"><p class="font-black font-mono text-lg text-green-400">$${r.net.toLocaleString()}</p></div>
+          <button onclick="window.deleteRecord(${r.id}, event)" class="w-10 h-10 flex items-center justify-center text-slate-600 active:text-red-400 text-base rounded-full hover:bg-white/5"><i class="fas fa-trash-can"></i></button>
+        </div>`).join('');
+    }
+  }
+
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(pattern); } catch(e) {}
+    }
+  }
+
+  init();
+</script>
 </body>
 </html>
+
+
