@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>智慧記帳 Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap');
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #0f172a;
+        color: #e2e8f0;
+        overflow: hidden;
+        overscroll-behavior-y: contain;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .font-mono { font-family: 'JetBrains Mono', monospace; }
+      .safe-area-pt { padding-top: env(safe-area-inset-top); }
+      .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
+      .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      .active-scale:active { transform: scale(0.95); }
+      * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+      button:active { opacity: 0.7; }
+    </style>
+</head>
+<body class="safe-area-pt h-screen flex flex-col">
+
+    <header class="bg-indigo-900/40 border-b border-indigo-500/20 p-5 rounded-b-[2.5rem] shrink-0 shadow-2xl z-10">
+        <div class="max-w-xl mx-auto">
+            <div class="flex justify-between items-center mb-5 px-1">
+                <h1 class="text-xl font-black flex items-center gap-2 text-white">
+                    <span class="bg-indigo-600 p-2 rounded-xl shadow-lg"><i class="fas fa-taxi"></i></span>
+                    智慧記帳
+                </h1>
+                <div class="text-right">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">總實領淨利</p>
+                    <p id="total-net" class="text-xl font-black font-mono text-indigo-400">$0</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
+                    <i class="fas fa-dollar-sign text-green-400 text-sm mb-1"></i>
+                    <span class="text-[10px] font-bold text-slate-400">總實領</span>
+                    <span id="stat-total" class="text-sm font-mono font-bold">$0</span>
+                </div>
+                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
+                    <i class="fas fa-route text-indigo-400 text-sm mb-1"></i>
+                    <span class="text-[10px] font-bold text-slate-400">趟數</span>
+                    <span id="stat-trips" class="text-sm font-mono font-bold">0</span>
+                </div>
+                <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-line text-orange-400 text-sm mb-1"></i>
+                    <span class="text-[10px] font-bold text-slate-400">平均</span>
+                    <span id="stat-avg" class="text-sm font-mono font-bold">$0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow overflow-hidden flex flex-col max-w-xl mx-auto w-full">
+        <div class="p-5 shrink-0">
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚗</div>
+                    <p class="text-sm font-bold text-white mb-1">Uber</p>
+                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
+                </button>
+                <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">⚡</div>
+                    <p class="text-sm font-bold text-white mb-1">Bolt</p>
+                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
+                </button>
+                <button onclick="openInput('台大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚕</div>
+                    <p class="text-sm font-bold text-white mb-1">台大車隊</p>
+                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
+                </button>
+                <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
+                    <div class="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🎁</div>
+                    <p class="text-sm font-bold text-white mb-1">獎勵/其他</p>
+                    <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-grow flex flex-col bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner overflow-hidden">
+            <div class="px-8 py-5 flex justify-between items-center shrink-0">
+                <h2 class="text-sm font-black uppercase tracking-widest text-slate-400">最近行程明細</h2>
+                <button onclick="window.clearHistory()" class="text-[10px] font-bold text-slate-600 hover:text-red-400 transition-colors py-1 px-3 border border-slate-800 rounded-full">
+                    <i class="fas fa-trash-arrow-up mr-1"></i>直接清空
+                </button>
+            </div>
+            <div id="record-list" class="overflow-y-auto px-5 pb-10 space-y-3 flex-grow custom-scrollbar">
+                </div>
+        </div>
+    </main>
+
+    <div id="modal" class="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-md hidden">
+        <div class="bg-slate-800 rounded-t-[3rem] shadow-2xl overflow-hidden animate-slide-up border-t border-indigo-500/20 safe-area-pb">
+            <div class="h-1.5 w-12 bg-slate-600 rounded-full mx-auto mt-4 mb-2"></div>
+            <div class="p-8 text-center">
+                <div class="flex items-center justify-center gap-2 mb-2">
+                    <span id="m-icon" class="text-2xl">🚗</span>
+                    <h3 id="m-title" class="text-slate-400 text-xs font-black uppercase tracking-widest">輸入金額</h3>
+                </div>
+                <div class="text-6xl font-black font-mono text-green-400 h-20 flex items-center justify-center tracking-tighter">
+                    <span class="text-green-500 mr-2 text-3xl">$</span>
+                    <span id="display-val">0</span>
+                    <span class="w-1.5 h-12 bg-green-500 ml-2 animate-pulse rounded-full"></span>
+                </div>
+                <div class="bg-slate-900/50 border border-white/5 rounded-2xl py-2 px-6 inline-block mt-4">
+                    <p class="text-sm font-bold text-slate-400 flex items-center gap-2">
+                        <span id="m-calc-label">計算結果</span>: <span id="m-calc-val" class="text-white text-lg font-mono">$0</span>
+                    </p>
+                </div>
+            </div>
+            <div class="p-4 grid grid-cols-3 gap-3 bg-slate-900/50">
+                <button onclick="pressKey('1')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">1</button>
+                <button onclick="pressKey('2')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">2</button>
+                <button onclick="pressKey('3')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">3</button>
+                <button onclick="pressKey('4')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">4</button>
+                <button onclick="pressKey('5')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">5</button>
+                <button onclick="pressKey('6')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">6</button>
+                <button onclick="pressKey('7')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">7</button>
+                <button onclick="pressKey('8')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">8</button>
+                <button onclick="pressKey('9')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">9</button>
+                <button onclick="closeModal()" class="h-16 rounded-3xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
+                <button onclick="pressKey('0')" class="h-16 rounded-3xl bg-slate-800 text-white text-2xl font-black border border-white/5 active-scale">0</button>
+                <button onclick="pressKey('del')" class="h-16 rounded-3xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
+            </div>
+            <div class="p-6">
+                <button onclick="confirmEntry()" class="w-full h-16 bg-indigo-600 text-white text-lg font-black rounded-3xl shadow-xl active-scale flex items-center justify-center gap-3">
+                    確認入帳 <i class="fas fa-check-circle"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'taxi_ledger_final_v5';
+        let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let currentInput = "";
+        let currentTemplate = null;
+
+        function init() {
+            updateUI();
+        }
+
+        window.openInput = function(label, rate, icon, inputType) {
+            currentTemplate = { label, rate, icon, inputType };
+            currentInput = "";
+            document.getElementById('m-title').innerText = inputType === 'net' ? `${label} 實領金額` : `${label} 原始車資`;
+            document.getElementById('m-icon').innerText = icon;
+            document.getElementById('m-calc-label').innerText = inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
+            updateModalDisplay();
+            document.getElementById('modal').classList.remove('hidden');
+            vibrate(15);
+        };
+
+        window.closeModal = function() {
+            document.getElementById('modal').classList.add('hidden');
+        };
+
+        window.pressKey = function(key) {
+            vibrate(5);
+            if (key === 'del') {
+                currentInput = currentInput.slice(0, -1);
+            } else if (currentInput.length < 7) {
+                currentInput += key;
+            }
+            updateModalDisplay();
+        };
+
+        function updateModalDisplay() {
+            const val = parseFloat(currentInput) || 0;
+            let result = 0;
+            if (currentTemplate) {
+                if (currentTemplate.inputType === 'net') {
+                    result = Math.round(val / currentTemplate.rate);
+                } else {
+                    result = Math.round(val * currentTemplate.rate);
+                }
+            }
+            document.getElementById('display-val').innerText = currentInput || "0";
+            document.getElementById('m-calc-val').innerText = `$${result.toLocaleString()}`;
+        }
+
+        window.confirmEntry = function() {
+            if (!currentInput || currentInput === "0") return;
+            const inputVal = parseFloat(currentInput);
+            let netAmount = 0, originalAmount = 0;
+
+            if (currentTemplate.inputType === 'net') {
+                netAmount = inputVal;
+                originalAmount = Math.round(inputVal / currentTemplate.rate);
+            } else {
+                originalAmount = inputVal;
+                netAmount = Math.round(inputVal * currentTemplate.rate);
+            }
+
+            const now = new Date();
+            const record = {
+                id: Date.now(),
+                label: currentTemplate.label,
+                icon: currentTemplate.icon,
+                net: netAmount,
+                original: originalAmount,
+                date: `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+            };
+
+            records.unshift(record);
+            saveData();
+            closeModal();
+            vibrate([10, 30, 10]);
+        };
+
+        // 修改：移除確認視窗，直接刪除
+        window.deleteRecord = function(id, event) {
+            if (event) event.stopPropagation(); 
+            records = records.filter(r => r.id !== id);
+            saveData();
+            vibrate(20);
+        };
+
+        // 修改：移除確認視窗，直接清空
+        window.clearHistory = function() {
+            records = [];
+            saveData();
+            vibrate([50, 50, 50]);
+        };
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            updateUI();
+        }
+
+        function updateUI() {
+            const totalNet = records.reduce((sum, r) => sum + r.net, 0);
+            const count = records.length;
+            const avg = count > 0 ? Math.round(totalNet / count) : 0;
+
+            document.getElementById('total-net').innerText = `$${totalNet.toLocaleString()}`;
+            document.getElementById('stat-total').innerText = `$${totalNet.toLocaleString()}`;
+            document.getElementById('stat-trips').innerText = count;
+            document.getElementById('stat-avg').innerText = `$${avg.toLocaleString()}`;
+
+            const listContainer = document.getElementById('record-list');
+            if (records.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40">
+                        <i class="fas fa-box-open text-4xl mb-3"></i>
+                        <p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p>
+                    </div>`;
+            } else {
+                listContainer.innerHTML = records.map(r => `
+                    <div class="flex items-center gap-4 p-5 bg-slate-800/30 rounded-[1.5rem] border border-white/5 active:bg-slate-800 transition-all">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-xl">${r.icon}</div>
+                        <div class="flex-grow min-w-0">
+                            <p class="font-bold text-slate-200 truncate">${r.label}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[9px] text-slate-500 font-bold">${r.date}</span>
+                                <span class="text-[9px] font-bold text-slate-400">原始: $${r.original.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0 pr-1">
+                            <p class="font-black font-mono text-base text-green-400">$${r.net.toLocaleString()}</p>
+                        </div>
+                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-10 h-10 flex items-center justify-center text-slate-600 active:text-red-400">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function vibrate(pattern) {
+            if (navigator.vibrate) navigator.vibrate(pattern);
+        }
+
+        init();
+    </script>
+</body>
+</html>
