@@ -25,7 +25,6 @@
       .safe-area-pt { padding-top: env(safe-area-inset-top); }
       .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
       
-      /* 修改動畫：移除純 CSS 動畫，改由 JS 控制位移以達到跟手效果 */
       #modal-content {
         transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         will-change: transform;
@@ -43,7 +42,6 @@
         margin: 0 auto 12px;
       }
 
-      /* 遮罩漸變動畫 */
       #modal-overlay {
         transition: opacity 0.3s ease;
       }
@@ -59,25 +57,25 @@
                     老雞掰
                 </h1>
                 <div class="text-right">
-                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">總實領淨利</p>
-                    <p id="total-net" class="text-xl font-black font-mono text-indigo-400">$0</p>
+                    <p class="text-[11px] text-slate-300 font-bold uppercase tracking-widest">總實領淨利</p>
+                    <p id="total-net" class="text-3xl font-black font-mono text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.4)]">$0</p>
                 </div>
             </div>
             <div class="grid grid-cols-3 gap-3">
                 <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-dollar-sign text-green-400 text-sm mb-1"></i>
-                    <span class="text-[10px] font-bold text-slate-400">總實領</span>
-                    <span id="stat-total" class="text-sm font-mono font-bold">$0</span>
+                    <i class="fas fa-dollar-sign text-green-400 text-lg mb-1"></i>
+                    <span class="text-xs font-bold text-slate-300">總實領</span>
+                    <span id="stat-total" class="text-lg font-mono font-bold">$0</span>
                 </div>
                 <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-route text-indigo-400 text-sm mb-1"></i>
-                    <span class="text-[10px] font-bold text-slate-400">趟數</span>
-                    <span id="stat-trips" class="text-sm font-mono font-bold">0</span>
+                    <i class="fas fa-route text-indigo-400 text-lg mb-1"></i>
+                    <span class="text-xs font-bold text-slate-300">趟數</span>
+                    <span id="stat-trips" class="text-lg font-mono font-bold">0</span>
                 </div>
                 <div class="bg-slate-800/60 backdrop-blur-md border border-white/5 rounded-3xl py-4 flex flex-col items-center justify-center shadow-lg">
-                    <i class="fas fa-chart-line text-orange-400 text-sm mb-1"></i>
-                    <span class="text-[10px] font-bold text-slate-400">平均</span>
-                    <span id="stat-avg" class="text-sm font-mono font-bold">$0</span>
+                    <i class="fas fa-chart-line text-orange-400 text-lg mb-1"></i>
+                    <span class="text-xs font-bold text-slate-300">平均</span>
+                    <span id="stat-avg" class="text-lg font-mono font-bold">$0</span>
                 </div>
             </div>
         </div>
@@ -86,31 +84,31 @@
     <main class="max-w-xl mx-auto w-full pb-20">
         <div class="p-5 grid grid-cols-2 gap-4">
             <button onclick="openInput('Uber', 0.75, '🚗', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-12 h-12 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚗</div>
-                <p class="text-sm font-bold text-white mb-1">Uber</p>
-                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
+                <div class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🚗</div>
+                <p class="text-base font-bold text-white mb-1">Uber</p>
+                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入實領 (75%)</p>
             </button>
             <button onclick="openInput('Bolt', 0.80, '⚡', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">⚡</div>
-                <p class="text-sm font-bold text-white mb-1">Bolt</p>
-                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
+                <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">⚡</div>
+                <p class="text-base font-bold text-white mb-1">Bolt</p>
+                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (80%)</p>
             </button>
             <button onclick="openInput('台灣大車隊', 0.85, '🚕', 'orig')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-12 h-12 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🚕</div>
-                <p class="text-sm font-bold text-white mb-1">台灣大車隊</p>
-                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
+                <div class="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🚕</div>
+                <p class="text-base font-bold text-white mb-1">台灣大車隊</p>
+                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">輸入原始 (85%)</p>
             </button>
             <button onclick="openInput('獎勵', 1.0, '🎁', 'net')" class="active-scale bg-slate-800/40 border border-slate-700/50 p-5 rounded-[2rem] flex flex-col items-center justify-center">
-                <div class="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-2xl">🎁</div>
-                <p class="text-sm font-bold text-white mb-1">獎勵/其他</p>
-                <p class="text-[10px] font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
+                <div class="w-14 h-14 bg-red-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg text-3xl">🎁</div>
+                <p class="text-base font-bold text-white mb-1">獎勵/其他</p>
+                <p class="text-xs font-medium text-slate-500 bg-slate-900/50 px-2 py-0.5 rounded-full">100% 實領</p>
             </button>
         </div>
 
         <div class="bg-slate-900/50 rounded-t-[3rem] border-t border-slate-800 shadow-inner mt-4">
             <div class="px-8 py-5 flex justify-between items-center">
-                <h2 class="text-sm font-black uppercase tracking-widest text-slate-400">最近行程明細</h2>
-                <button onclick="window.clearHistory()" class="text-[10px] font-bold text-slate-600 hover:text-red-400 transition-colors py-1 px-3 border border-slate-800 rounded-full">
+                <h2 class="text-base font-black uppercase tracking-widest text-slate-400">最近行程明細</h2>
+                <button onclick="window.clearHistory()" class="text-xs font-bold text-slate-600 hover:text-red-400 transition-colors py-1 px-3 border border-slate-800 rounded-full">
                     <i class="fas fa-trash-arrow-up mr-1"></i>直接清空
                 </button>
             </div>
@@ -122,47 +120,47 @@
         
         <div id="modal-content" class="bg-slate-800 rounded-t-[3rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full" onclick="event.stopPropagation()">
             
-            <div id="drag-zone" class="pt-4 pb-2 cursor-grab active:cursor-grabbing">
+            <div class="pt-3 pb-1 cursor-grab active:cursor-grabbing">
                 <div class="drag-handle"></div>
             </div>
 
-            <div class="p-6 text-center">
-                <div class="flex items-center justify-center gap-2 mb-2">
+            <div class="px-6 pb-2 text-center">
+                <div class="flex items-center justify-center gap-2 mb-1">
                     <span id="m-icon" class="text-2xl">🚗</span>
                     <h3 id="m-title" class="text-slate-400 text-xs font-black uppercase tracking-widest">輸入金額</h3>
                 </div>
-                <div class="text-6xl font-black font-mono text-green-400 h-20 flex items-center justify-center tracking-tighter">
+                <div class="text-6xl font-black font-mono text-green-400 h-16 flex items-center justify-center tracking-tighter">
                     <span class="text-green-500 mr-2 text-3xl">$</span>
                     <span id="display-val">0</span>
-                    <span class="w-1.5 h-12 bg-green-500 ml-2 animate-pulse rounded-full"></span>
+                    <span class="w-1.5 h-10 bg-green-500 ml-2 animate-pulse rounded-full"></span>
                 </div>
-                <div class="bg-slate-900/50 border border-white/5 rounded-2xl py-2 px-6 inline-block mt-4">
+                <div class="bg-slate-900/50 border border-white/5 rounded-2xl py-1 px-4 inline-block mt-2">
                     <p class="text-sm font-bold text-slate-400 flex items-center gap-2">
                         <span id="m-calc-label">計算結果</span>: <span id="m-calc-val" class="text-white text-lg font-mono">$0</span>
                     </p>
                 </div>
             </div>
 
-            <div class="p-4 grid grid-cols-3 gap-3 bg-slate-900/50">
-                <button onclick="pressKey('1')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">1</button>
-                <button onclick="pressKey('2')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">2</button>
-                <button onclick="pressKey('3')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">3</button>
-                <button onclick="pressKey('4')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">4</button>
-                <button onclick="pressKey('5')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">5</button>
-                <button onclick="pressKey('6')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">6</button>
-                <button onclick="pressKey('7')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">7</button>
-                <button onclick="pressKey('8')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">8</button>
-                <button onclick="pressKey('9')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">9</button>
-                <button onclick="closeModal()" class="h-14 rounded-2xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
-                <button onclick="pressKey('0')" class="h-14 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">0</button>
-                <button onclick="pressKey('del')" class="h-14 rounded-2xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
+            <div class="p-3 grid grid-cols-3 gap-2 bg-slate-900/50">
+                <button onclick="pressKey('1')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">1</button>
+                <button onclick="pressKey('2')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">2</button>
+                <button onclick="pressKey('3')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">3</button>
+                <button onclick="pressKey('4')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">4</button>
+                <button onclick="pressKey('5')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">5</button>
+                <button onclick="pressKey('6')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">6</button>
+                <button onclick="pressKey('7')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">7</button>
+                <button onclick="pressKey('8')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">8</button>
+                <button onclick="pressKey('9')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">9</button>
+                <button onclick="closeModal()" class="h-11 rounded-2xl bg-slate-800/50 text-slate-400 text-sm font-bold active-scale">取消</button>
+                <button onclick="pressKey('0')" class="h-11 rounded-2xl bg-slate-800 text-white text-2xl font-black font-keypad border border-white/5 active-scale">0</button>
+                <button onclick="pressKey('del')" class="h-11 rounded-2xl bg-slate-800/50 text-slate-400 text-xl border border-white/5 active-scale"><i class="fas fa-backspace"></i></button>
             </div>
-            <div class="p-6">
-                <button onclick="confirmEntry()" class="w-full h-16 bg-indigo-600 text-white text-lg font-black rounded-3xl shadow-xl active-scale flex items-center justify-center gap-3">
+            <div class="p-4">
+                <button onclick="confirmEntry()" class="w-full h-12 bg-indigo-600 text-white text-lg font-black rounded-2xl shadow-xl active-scale flex items-center justify-center gap-3">
                     確認入帳 <i class="fas fa-check-circle"></i>
                 </button>
             </div>
-            <div class="h-6"></div>
+            <div class="h-4"></div>
         </div>
     </div>
 
@@ -172,7 +170,6 @@
         let currentInput = "";
         let currentTemplate = null;
 
-        // 手勢相關變數
         let startY = 0;
         let currentY = 0;
         let isDragging = false;
@@ -184,14 +181,17 @@
             initGesture();
         }
 
-        // 初始化手勢監聽
+        // 修改：監聽區域改為 modalContent，讓整個彈窗都可拖曳
         function initGesture() {
-            const dragZone = document.getElementById('drag-zone');
+            const dragZone = document.getElementById('modal-content');
 
             const onTouchStart = (e) => {
+                // 檢查是否點擊到按鈕 (避免拖曳影響點擊)
+                // 但為了實現「按住按鈕下拉也能關閉」，我們不做過多阻擋
+                // 瀏覽器通常能區分 Click 和 Scroll/Drag
                 startY = e.touches[0].clientY;
                 isDragging = true;
-                modalContent.style.transition = 'none'; // 拖動時關閉動畫效果
+                modalContent.style.transition = 'none'; 
             };
 
             const onTouchMove = (e) => {
@@ -199,9 +199,9 @@
                 currentY = e.touches[0].clientY;
                 const deltaY = currentY - startY;
                 
-                if (deltaY > 0) { // 只允許向下拖動
+                if (deltaY > 0) { 
+                    e.preventDefault(); // 防止背景滾動
                     modalContent.style.transform = `translateY(${deltaY}px)`;
-                    // 遮罩透明度隨拖動變淡
                     const opacity = 0.7 * (1 - deltaY / window.innerHeight);
                     modalOverlay.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, opacity)})`;
                 }
@@ -211,14 +211,13 @@
                 if (!isDragging) return;
                 isDragging = false;
                 const deltaY = currentY - startY;
-                const threshold = window.innerHeight * 0.4; // 設定為 40% 的高度作為關閉閾值
+                const threshold = window.innerHeight * 0.4; 
 
                 modalContent.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
                 
                 if (deltaY > threshold) {
-                    closeModal(); // 超過閾值則關閉
+                    closeModal();
                 } else {
-                    // 未超過則彈回
                     modalContent.style.transform = `translateY(0)`;
                     modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0.7)`;
                 }
@@ -239,7 +238,7 @@
             updateModalDisplay();
             
             modalOverlay.classList.remove('hidden');
-            modalOverlay.style.opacity = "1";
+            setTimeout(() => { modalOverlay.style.opacity = "1"; }, 10); // Fix fade in
             modalContent.style.transform = `translateY(0)`;
             document.body.style.overflow = 'hidden'; 
             vibrate(15);
@@ -267,7 +266,11 @@
         function updateModalDisplay() {
             const val = parseFloat(currentInput) || 0;
             let result = currentTemplate ? (currentTemplate.inputType === 'net' ? Math.round(val / currentTemplate.rate) : Math.round(val * currentTemplate.rate)) : 0;
-            document.getElementById('display-val').innerText = currentInput || "0";
+            
+            // 修改：即時顯示千分位
+            const formattedInput = currentInput ? parseFloat(currentInput).toLocaleString() : "0";
+            document.getElementById('display-val').innerText = formattedInput;
+            
             document.getElementById('m-calc-val').innerText = `$${result.toLocaleString()}`;
         }
 
@@ -324,15 +327,16 @@
             if (records.length === 0) {
                 listContainer.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-700 opacity-40"><i class="fas fa-box-open text-4xl mb-3"></i><p class="text-xs font-bold uppercase tracking-widest">目前暫無行程</p></div>`;
             } else {
+                // 列表文字與圖示也加大
                 listContainer.innerHTML = records.map(r => `
                     <div class="flex items-center gap-4 p-5 bg-slate-800/30 rounded-[1.5rem] border border-white/5 active:bg-slate-800 transition-all">
-                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-xl">${r.icon}</div>
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-slate-900 shadow-inner text-2xl">${r.icon}</div>
                         <div class="flex-grow min-w-0">
-                            <p class="font-bold text-slate-200 truncate">${r.label}</p>
-                            <div class="flex items-center gap-2 mt-0.5"><span class="text-[9px] text-slate-500 font-bold font-mono">${r.date}</span><span class="text-[9px] font-bold text-slate-400">原始: <span class="font-mono">$${r.original.toLocaleString()}</span></span></div>
+                            <p class="font-bold text-slate-200 truncate text-lg">${r.label}</p>
+                            <div class="flex items-center gap-2 mt-1"><span class="text-[11px] text-slate-500 font-bold font-mono">${r.date}</span><span class="text-[11px] font-bold text-slate-400">原始: <span class="font-mono">$${r.original.toLocaleString()}</span></span></div>
                         </div>
-                        <div class="text-right shrink-0 pr-1"><p class="font-black font-mono text-base text-green-400">$${r.net.toLocaleString()}</p></div>
-                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-10 h-10 flex items-center justify-center text-slate-600 active:text-red-400"><i class="fas fa-trash-can"></i></button>
+                        <div class="text-right shrink-0 pr-1"><p class="font-black font-mono text-xl text-green-400">$${r.net.toLocaleString()}</p></div>
+                        <button onclick="window.deleteRecord(${r.id}, event)" class="w-12 h-12 flex items-center justify-center text-slate-600 active:text-red-400 text-lg"><i class="fas fa-trash-can"></i></button>
                     </div>`).join('');
             }
         }
