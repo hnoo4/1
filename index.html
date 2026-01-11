@@ -19,26 +19,22 @@
         -webkit-tap-highlight-color: transparent;
       }
 
-      .font-mono { 
-        font-family: 'Roboto Mono', monospace; 
-        letter-spacing: -0.5px;
-      }
-
-      .font-keypad {
-        font-family: system-ui, -apple-system, sans-serif;
-      }
+      .font-mono { font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+      .font-keypad { font-family: system-ui, -apple-system, sans-serif; }
 
       .safe-area-pt { padding-top: env(safe-area-inset-top); }
       .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
       
-      @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-      .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      /* 修改動畫：移除純 CSS 動畫，改由 JS 控制位移以達到跟手效果 */
+      #modal-content {
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        will-change: transform;
+      }
       
       .active-scale:active { transform: scale(0.95); }
       * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
       button:active { opacity: 0.7; }
 
-      /* 滑動橫槓樣式 */
       .drag-handle {
         width: 40px;
         height: 5px;
@@ -47,9 +43,10 @@
         margin: 0 auto 12px;
       }
 
-      /* 隱藏捲動條但保留功能 */
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      /* 遮罩漸變動畫 */
+      #modal-overlay {
+        transition: opacity 0.3s ease;
+      }
     </style>
 </head>
 <body class="safe-area-pt min-h-screen">
@@ -121,12 +118,11 @@
         </div>
     </main>
 
-    <div id="modal" class="fixed inset-0 z-50 overflow-y-auto no-scrollbar hidden bg-black/70 backdrop-blur-sm" onclick="closeModal()">
-        <div class="h-[20vh] w-full"></div>
+    <div id="modal-overlay" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex flex-col justify-end" onclick="closeModal()">
         
-        <div class="bg-slate-800 rounded-t-[3rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full animate-slide-up" onclick="event.stopPropagation()">
+        <div id="modal-content" class="bg-slate-800 rounded-t-[3rem] shadow-2xl border-t border-indigo-500/20 safe-area-pb max-w-xl mx-auto w-full" onclick="event.stopPropagation()">
             
-            <div class="pt-4 pb-2 cursor-grab active:cursor-grabbing">
+            <div id="drag-zone" class="pt-4 pb-2 cursor-grab active:cursor-grabbing">
                 <div class="drag-handle"></div>
             </div>
 
@@ -166,7 +162,7 @@
                     確認入帳 <i class="fas fa-check-circle"></i>
                 </button>
             </div>
-            <div class="h-10"></div>
+            <div class="h-6"></div>
         </div>
     </div>
 
@@ -176,7 +172,63 @@
         let currentInput = "";
         let currentTemplate = null;
 
-        function init() { updateUI(); }
+        // 手勢相關變數
+        let startY = 0;
+        let currentY = 0;
+        let isDragging = false;
+        const modalContent = document.getElementById('modal-content');
+        const modalOverlay = document.getElementById('modal-overlay');
+
+        function init() { 
+            updateUI(); 
+            initGesture();
+        }
+
+        // 初始化手勢監聽
+        function initGesture() {
+            const dragZone = document.getElementById('drag-zone');
+
+            const onTouchStart = (e) => {
+                startY = e.touches[0].clientY;
+                isDragging = true;
+                modalContent.style.transition = 'none'; // 拖動時關閉動畫效果
+            };
+
+            const onTouchMove = (e) => {
+                if (!isDragging) return;
+                currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                if (deltaY > 0) { // 只允許向下拖動
+                    modalContent.style.transform = `translateY(${deltaY}px)`;
+                    // 遮罩透明度隨拖動變淡
+                    const opacity = 0.7 * (1 - deltaY / window.innerHeight);
+                    modalOverlay.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, opacity)})`;
+                }
+            };
+
+            const onTouchEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                const deltaY = currentY - startY;
+                const threshold = window.innerHeight * 0.4; // 設定為 40% 的高度作為關閉閾值
+
+                modalContent.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                
+                if (deltaY > threshold) {
+                    closeModal(); // 超過閾值則關閉
+                } else {
+                    // 未超過則彈回
+                    modalContent.style.transform = `translateY(0)`;
+                    modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0.7)`;
+                }
+                currentY = 0;
+            };
+
+            dragZone.addEventListener('touchstart', onTouchStart);
+            window.addEventListener('touchmove', onTouchMove, { passive: false });
+            window.addEventListener('touchend', onTouchEnd);
+        }
 
         window.openInput = function(label, rate, icon, inputType) {
             currentTemplate = { label, rate, icon, inputType };
@@ -186,17 +238,20 @@
             document.getElementById('m-calc-label').innerText = inputType === 'net' ? '回推原始車資' : '實領淨利 (估)';
             updateModalDisplay();
             
-            const modal = document.getElementById('modal');
-            modal.classList.remove('hidden');
-            modal.scrollTo(0, 0); // 開啟時回到頂部
+            modalOverlay.classList.remove('hidden');
+            modalOverlay.style.opacity = "1";
+            modalContent.style.transform = `translateY(0)`;
             document.body.style.overflow = 'hidden'; 
             vibrate(15);
         };
 
         window.closeModal = function() {
-            const modal = document.getElementById('modal');
-            modal.classList.add('hidden');
-            document.body.style.overflow = 'auto'; 
+            modalContent.style.transform = `translateY(100%)`;
+            modalOverlay.style.backgroundColor = `rgba(0, 0, 0, 0)`;
+            setTimeout(() => {
+                modalOverlay.classList.add('hidden');
+                document.body.style.overflow = 'auto'; 
+            }, 300);
         };
 
         window.pressKey = function(key) {
